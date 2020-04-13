@@ -16,6 +16,10 @@
             android:id="@+id/nav_manage"
             android:icon="@drawable/ic_menu_manage"
             android:title="@string/action_setting" />
+        <item
+            android:id="@+id/nav_task"
+            android:icon="@drawable/ic_menu_send"
+            android:title="@string/task" />
     </group>
 
 </menu>

@@ -90,6 +90,8 @@
 
         <activity android:name="com.example.mockgps.HistoryActivity"/>
 
+        <activity android:name="com.example.mockgps.TaskActivity"/>
+
         <receiver android:name="com.example.mockgps.MainActivity$MockServiceReceiver" />
     </application>
 

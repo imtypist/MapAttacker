@@ -451,42 +451,7 @@ public class MainActivity extends AppCompatActivity
         builder.show();
     }
 
-    //显示接受众包任务的对话框
-    public void showTaskDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("输入账户信息和任务ID");
-        //    通过LayoutInflater来加载一个xml的布局文件作为一个View对象
-        View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.task_dialog, null);
-        //    设置我们自己定义的布局文件作为弹出框的Content
-        builder.setView(view);
 
-        final EditText dialog_task_id = (EditText) view.findViewById(R.id.dialog_task_id);
-        final EditText dialog_account = (EditText) view.findViewById(R.id.dialog_account);
-        final EditText dialog_passwd = (EditText) view.findViewById(R.id.dialog_passwd);
-
-        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    String dialog_task_id_str = dialog_task_id.getText().toString().trim();
-                    String dialog_account_str = dialog_account.getText().toString().trim();
-                    String dialog_passwd_str = dialog_passwd.getText().toString().trim();
-
-                    requestData(dialog_task_id_str, dialog_account_str, dialog_passwd_str);
-
-                } catch (Exception e) {
-                    DisplayToast("请求任务出错,请检查输入是否正确");
-                    e.printStackTrace();
-                }
-            }
-        });
-        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-            }
-        });
-        builder.show();
-    }
 
     // 请求众包任务
     public void requestData(final String task_id, final String account, final String passwd) {
@@ -1801,8 +1766,6 @@ public class MainActivity extends AppCompatActivity
             resetMap();
         } else if (id == R.id.action_input) {
             showLatlngDialog();
-        }else if(id == R.id.action_task){
-            showTaskDialog();
         }
 
         return super.onOptionsItemSelected(item);
@@ -1828,6 +1791,9 @@ public class MainActivity extends AppCompatActivity
                 DisplayToast("无法跳转到开发者选项,请先确保您的设备已处于开发者模式");
                 e.printStackTrace();
             }
+        } else if(id == R.id.nav_task){
+            Intent intent = new Intent(MainActivity.this, TaskActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
