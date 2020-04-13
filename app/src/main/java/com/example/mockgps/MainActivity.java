@@ -1667,24 +1667,7 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_setting) {
-            try {
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
-                startActivity(intent);
-            } catch (Exception e) {
-                DisplayToast("无法跳转到开发者选项,请先确保您的设备已处于开发者模式");
-                e.printStackTrace();
-            }
-            //判断是否开启开发者选项
-//            boolean enableAdb = (Settings.Secure.getInt(getContentResolver(), Settings.Secure.ADB_ENABLED, 0) > 0);
-//            if (!enableAdb) {
-//                DisplayToast("请打先开开发者选项");
-//            } else {
-//                Intent intent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
-//                startActivity(intent);
-//            }
-            return true;
-        } else if (id == R.id.action_resetMap) {
+        if (id == R.id.action_resetMap) {
             resetMap();
         } else if (id == R.id.action_input) {
             showLatlngDialog();
@@ -1705,26 +1688,14 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_history) {
             Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
             startActivity(intent);
-        } else if (id == R.id.nav_localmap) {
-            Intent intent = new Intent(MainActivity.this, OfflineMapActivity.class);
-            startActivity(intent);
         } else if (id == R.id.nav_manage) {
-            Intent intent = new Intent(Settings.ACTION_SETTINGS);
-            startActivity(intent);
-        } else if (id == R.id.nav_bug_report) {
-            //选择日志文件并上传
-            DisplayToast("代码没写完");
-
-        } else if (id == R.id.nav_send) {
-            Intent i = new Intent(Intent.ACTION_SEND);
-            // i.setType("text/plain"); //模拟器请使用这行
-            i.setType("message/rfc822"); // 真机上使用这行
-            i.putExtra(Intent.EXTRA_EMAIL,
-                    new String[]{"hilavergil@gmail.com"});
-            i.putExtra(Intent.EXTRA_SUBJECT, "SUGGESTION");
-            startActivity(Intent.createChooser(i,
-                    "Select email application."));
-
+            try {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                startActivity(intent);
+            } catch (Exception e) {
+                DisplayToast("无法跳转到开发者选项,请先确保您的设备已处于开发者模式");
+                e.printStackTrace();
+            }
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
