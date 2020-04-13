@@ -2,7 +2,6 @@ package com.example.mockgps;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -25,6 +24,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Message;
 import android.provider.Settings;
 
 import androidx.annotation.RequiresApi;
@@ -32,7 +32,6 @@ import androidx.annotation.RequiresApi;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
-import androidx.core.app.ActivityCompat;
 import androidx.core.view.MenuItemCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
@@ -111,7 +110,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -444,6 +450,130 @@ public class MainActivity extends AppCompatActivity
         });
         builder.show();
     }
+
+    //显示接受众包任务的对话框
+    public void showTaskDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("输入账户信息和任务ID");
+        //    通过LayoutInflater来加载一个xml的布局文件作为一个View对象
+        View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.task_dialog, null);
+        //    设置我们自己定义的布局文件作为弹出框的Content
+        builder.setView(view);
+
+        final EditText dialog_task_id = (EditText) view.findViewById(R.id.dialog_task_id);
+        final EditText dialog_account = (EditText) view.findViewById(R.id.dialog_account);
+        final EditText dialog_passwd = (EditText) view.findViewById(R.id.dialog_passwd);
+
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    String dialog_task_id_str = dialog_task_id.getText().toString().trim();
+                    String dialog_account_str = dialog_account.getText().toString().trim();
+                    String dialog_passwd_str = dialog_passwd.getText().toString().trim();
+
+                    requestData(dialog_task_id_str, dialog_account_str, dialog_passwd_str);
+
+                } catch (Exception e) {
+                    DisplayToast("请求任务出错,请检查输入是否正确");
+                    e.printStackTrace();
+                }
+            }
+        });
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        builder.show();
+    }
+
+    // 请求众包任务
+    public void requestData(final String task_id, final String account, final String passwd) {
+        //网络操作不能在主线程中进行
+        new Thread(){
+            @Override
+            public void run() {
+                try {
+                    String url = "http://hhmoumoumouhh.51vip.biz/web/LoginServlet";
+                    URL obj = new URL(url);
+                    HttpURLConnection conn = (HttpURLConnection) obj.openConnection();
+                    // method POST
+                    conn.setRequestMethod("POST");
+                    conn.setDoOutput(true);
+                    DataOutputStream wr=new DataOutputStream(conn.getOutputStream());
+                    //要提交的参数
+                    String content = "TaskId="+task_id+"AccountNumber="+account+"&Password="+passwd; // 请求数据待定
+                    //将要上传的内容写入流中
+                    wr.writeBytes(content);
+                    //刷新、关闭
+                    wr.flush();
+                    wr.close();
+
+                    conn.setReadTimeout(6000);
+
+                    //获取响应码的同时会连接网络
+                    if (conn.getResponseCode() == 200) {
+                        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                        String output;
+                        StringBuffer response = new StringBuffer();
+
+                        while ((output = in.readLine()) != null) {
+                            response.append(output);
+                        }
+                        in.close();
+                        // 处理response数据
+                        onResponse(response.toString());
+
+                        conn.disconnect();
+                    }
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+    // 处理网络请求返回数据
+    public void onResponse(String response) {
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            String result = ((JSONObject)jsonObject.get("params")).getString("Result");
+            if (result.equals("success")) {
+                //做登录成功的操作
+                //解析数据
+                JSONObject address = jsonObject.getJSONObject("address");
+                String latitude= address.getString("latitude");
+                String longitude= address.getString("longitude");
+
+                // MCC，Mobile Country Code，移动国家代码（中国的为460）；
+                // MNC，Mobile Network Code，移动网络号码（中国移动为0，中国联通为1，中国电信为2）； 
+                // LAC，Location Area Code，位置区域码；
+                // CID，Cell Identity，基站编号；
+                // BSSS，Base station signal strength，基站信号强度。
+                JSONObject bss_info = jsonObject.getJSONObject("bss_info");
+                String MCC = bss_info.getString("MCC1");
+                String LAC = bss_info.getString("LAC1");
+                String MNC = bss_info.getString("MNC1");
+                String CID = bss_info.getString("CID1");
+                String BSSS = bss_info.getString("BSSS1");
+
+                //TODO: 将返回的数据注入定位服务，并保持实时刷新
+
+
+            } else {
+                //做登录失败的操作
+                DisplayToast(result);
+            }
+        } catch (JSONException e) {
+            //做http请求异常的操作
+            e.printStackTrace();
+        }
+    }
+
 
     //判断GPS是否打开
     private boolean isGpsOpened() {
@@ -1671,6 +1801,8 @@ public class MainActivity extends AppCompatActivity
             resetMap();
         } else if (id == R.id.action_input) {
             showLatlngDialog();
+        }else if(id == R.id.action_task){
+            showTaskDialog();
         }
 
         return super.onOptionsItemSelected(item);

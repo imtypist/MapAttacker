@@ -13,7 +13,8 @@
     <string name="startUse">进入应用</string>
     <string name="startImgDesp">NULL</string>
     <string name="resetmap">重置地图</string>
-    <string name="manual_input">经纬度定位</string>
+    <string name="manual_input">GPS坐标定位</string>
+    <string name="action_task">网络众包任务</string>
     <string name="author">Author: imtypist@163.com</string>
     <string name="norecord">无历史纪录</string>
     <string name="safecode">B2:C4:35:A9:25:06:AC:CD:82:6D:45:04:A5:75:D1:87:52:98:51:08;com.example.mockgps</string>
