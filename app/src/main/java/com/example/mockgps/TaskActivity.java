@@ -27,8 +27,10 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +39,7 @@ public class TaskActivity extends AppCompatActivity {
 
     public List<FLocation> FLocationPoints = new ArrayList<>();
 
-    public static final int MSG_START_TASK = 1; // 任务结束扫尾工作
+    public static final int MSG_END_TASK = 1; // 任务结束扫尾工作
     public static final int MSG_UPDATE_LOC = 2; // 更新UI数据
     public static final int MSG_NETWORK_FAIL = -1; // 网络出错
 
@@ -91,16 +93,19 @@ public class TaskActivity extends AppCompatActivity {
     private Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
+            Switch startTask = findViewById(R.id.task_switch);
             switch (msg.what){
-                case MSG_START_TASK:
+                case MSG_END_TASK:
                     // 用于任务完成后的收尾工作，更新UI
-                    stopMyTask();
+                    startTask.setChecked(false);
                     break;
                 case MSG_UPDATE_LOC:
                     updateLocationView(msg.arg1);
                     break;
                 case MSG_NETWORK_FAIL:
                     DisplayToast("无法连接服务器");
+                    FLocationPoints.clear();
+                    startTask.setChecked(false);
                     break;
             }
         }
@@ -152,7 +157,13 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void run(){
                 // 请求数据
-                requestData(task_id, account, passwd);
+                if(!requestData(task_id, account, passwd)){
+                    Message message = Message.obtain();
+                    message.what = MSG_NETWORK_FAIL;
+                    handler.sendMessage(message);
+                    return;
+                }
+
                 Log.d("DEBUG","requestData returned");
 
                 for (int i=0;i<FLocationPoints.size();i++){
@@ -185,7 +196,7 @@ public class TaskActivity extends AppCompatActivity {
 
                 // 任务完成
                 Message message = Message.obtain();
-                message.what = MSG_START_TASK;
+                message.what = MSG_END_TASK;
                 handler.sendMessage(message);
             }
         }.start();
@@ -193,8 +204,6 @@ public class TaskActivity extends AppCompatActivity {
 
     public void stopMyTask(){
         isStartTask = false;
-        Switch startTask = findViewById(R.id.task_switch);
-        startTask.setChecked(false);
         //end mock location
         Intent mockLocServiceIntent = new Intent(TaskActivity.this, MockGpsService.class);
         stopService(mockLocServiceIntent);
@@ -202,7 +211,8 @@ public class TaskActivity extends AppCompatActivity {
 
 
     // 请求众包任务
-    public void requestData(final String task_id, final String account, final String passwd) {
+    public boolean requestData(final String task_id, final String account, final String passwd) {
+        boolean ret = true;
         //网络操作不能在主线程中进行
         try {
             String url = "http://hhmoumoumouhh.51vip.biz/web/LoginServlet";
@@ -234,21 +244,26 @@ public class TaskActivity extends AppCompatActivity {
                 }
                 in.close();
                 // 处理response数据
-                onResponse(response.toString());
+                ret = onResponse(response.toString());
 
                 conn.disconnect();
+            }else {
+                ret = false;
             }
-        } catch (Exception e) {
+        } catch (MalformedURLException e){
             e.printStackTrace();
-            Log.d("DEBUG","无法连接服务器");
-            Message message = Message.obtain();
-            message.what = MSG_NETWORK_FAIL;
-            handler.sendMessage(message);
+            ret = false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            ret = false;
         }
+
+        return ret;
     }
 
     // 处理网络请求返回数据，返回格式待定，暂定为List<JSONObject>
-    public void onResponse(String response) {
+    public boolean onResponse(String response) {
+        boolean ret = true;
         try {
             JSONObject jsonObject = new JSONObject(response);
             String result = ((JSONObject)jsonObject.get("params")).getString("Result");
@@ -282,11 +297,14 @@ public class TaskActivity extends AppCompatActivity {
             } else {
                 //做登录失败的操作
                 Log.d("DEBUG",result);
+                ret = false;
             }
         } catch (JSONException e) {
             //做http请求异常的操作
             e.printStackTrace();
+            ret = false;
         }
+        return ret;
     }
 
     public void DisplayToast(String str) {
