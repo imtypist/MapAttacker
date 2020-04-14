@@ -8,11 +8,14 @@ import android.location.Location;
 import android.os.Build;
 import android.os.StrictMode;
 import android.provider.Settings;
+import android.telephony.PhoneStateListener;
 import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -83,6 +86,123 @@ public class XposedPlugin implements IXposedHookLoadPackage {
         initProcessBuilder(loadPackageParam);
         initSettingsGlobal(loadPackageParam);
 
+        // hook基站信息
+        hookMethod("android.telephony.TelephonyManager", loadPackageParam.classLoader, "getCellLocation",
+                new XC_MethodHook() {
+                    /**
+                     * android.telephony.TelephonyManager的getCellLocation方法
+                     * Returns the current location of the device.
+                     * Return null if current location is not available.
+                     */
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param)
+                            throws Throwable {
+                        param.setResult(null);
+                    }
+                });
+
+        hookMethod("android.telephony.TelephonyManager", loadPackageParam.classLoader, "getNeighboringCellInfo",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param)
+                            throws Throwable {
+                        param.setResult(null);
+                    }
+                });
+
+        hookMethods("android.telephony.TelephonyManager", "getSimState", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                Log.e(TAG, "getSimState");
+                param.setResult(0);
+            }
+        });
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
+            hookMethod("android.telephony.TelephonyManager", loadPackageParam.classLoader,
+                    "getAllCellInfo", new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            Log.e(TAG, "getAllCellInfo");
+                            param.setResult(null);
+                        }
+                    });
+        }
+
+        hookMethods("android.telephony.TelephonyManager", "listen", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                Log.e(TAG, "TelephonyManager listen");
+                param.args[0] = new PhoneStateListenerDelegate((PhoneStateListener) param.args[0], 0, 0);
+            }
+        });
+
+        // hook wifi 信息
+        hookMethod("android.net.wifi.WifiManager", loadPackageParam.classLoader, "getScanResults",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param)
+                            throws Throwable {
+                        param.setResult(null);
+                    }
+                });
+
+        hookMethod("android.net.wifi.WifiInfo", loadPackageParam.classLoader, "getMacAddress", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                param.setResult("00-00-00-00-00-00-00-E0");
+            }
+        });
+
+        hookMethod("android.net.wifi.WifiInfo", loadPackageParam.classLoader, "getSSID", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                param.setResult(null);
+            }
+        });
+
+        hookMethod("android.net.wifi.WifiInfo", loadPackageParam.classLoader, "getBSSID", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                param.setResult("00:00:00:00:00:00");
+            }
+        });
+
+    }
+
+    //不带参数的方法拦截
+    private static void hookMethod(Class<?> clazz, String methodName, Object... parameterTypesAndCallback) {
+        try {
+            XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
+        } catch (Throwable e) {
+            Log.e(TAG, e.toString());
+        }
+    }
+
+    //不带参数的方法拦截
+    private static void hookMethod(String className, ClassLoader classLoader, String methodName,
+                                   Object... parameterTypesAndCallback) {
+        try {
+            XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+        } catch (Throwable e) {
+            Log.e(TAG, e.toString());
+        }
+    }
+
+    //带参数的方法拦截
+    private static void hookMethods(String className, String methodName, XC_MethodHook xmh) {
+        try {
+            Class<?> clazz = Class.forName(className);
+
+            for (Method method : clazz.getDeclaredMethods())
+                if (method.getName().equals(methodName)
+                        && !Modifier.isAbstract(method.getModifiers())
+                        && Modifier.isPublic(method.getModifiers())) {
+                    XposedBridge.hookMethod(method, xmh);
+                }
+        } catch (Throwable e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     /**
