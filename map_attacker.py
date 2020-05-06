@@ -40,6 +40,8 @@ def update_location_gaode(device):
             delta_lng = 0
         else:
             d = int(distance(location_points[i], location_points[i+1]))
+            if d <= 0:
+                d = 1
             delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
             delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
         for j in range(d):
@@ -64,6 +66,8 @@ def update_location_baidu(device):
             delta_lng = 0
         else:
             d = int(distance(location_points[i], location_points[i+1]))
+            if d <= 0:
+                d = 1
             delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
             delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
         for j in range(d):
@@ -92,6 +96,8 @@ def update_location_tencent(device):
             delta_lng = 0
         else:
             d = int(distance(location_points[i], location_points[i+1]))
+            if d <= 0:
+                d = 1
             delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
             delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
         for j in range(d):
