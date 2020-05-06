@@ -13,12 +13,15 @@ GOOGLEMAP = 4
 
 '''
 e.g., [(lat,lng),]
-'''
+
 location_points = [[31.2050610000, 121.3266350000], [31.2050470000, 121.3264740000], [31.2050610000, 121.3262650000],
                    [31.2050520000, 121.3261310000], [31.2050430000, 121.3259640000], [31.2050290000, 121.3258680000],
                    [31.2050250000, 121.3257390000], [31.2050200000, 121.3256260000], [31.2050150000, 121.3254760000],
                    [31.2049970000, 121.3253210000], [31.2050060000, 121.3252130000], [31.2049920000, 121.3250630000],
                    [31.2049970000, 121.3249560000], [31.2049920000, 121.3248220000], [31.2049690000, 121.3247040000]]
+'''
+
+location_points = []
 
 
 def update_location_gaode(device):
@@ -27,13 +30,22 @@ def update_location_gaode(device):
     os.popen(cmd_prefix + "am start -d \"amapuri://route/plan/?slat=" + str(location_points[0][0]) + "'&'slon=" + str(
         location_points[0][1]) + "'&'dlat=" + str(location_points[-1][0]) + "'&'dlon=" + str(
         location_points[-1][1]) + "'&'dev=1'&'t=0\"")
-    time.sleep(5)
+    time.sleep(30)
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 850 1560")
-    for point in location_points:
-        os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(point[0]))
-        os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(point[1]))
-        time.sleep(3)
+    for i in range(len(location_points)):
+        if i == (len(location_points)-1):
+            d = 1
+            delta_lat = 0
+            delta_lng = 0
+        else:
+            d = int(distance(location_points[i], location_points[i+1]))
+            delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
+            delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
+        for j in range(d):
+            os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(location_points[i][0] + j*delta_lat))
+            os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(location_points[i][1] + j*delta_lng))
+            time.sleep(2)
 
 
 def update_location_baidu(device):
@@ -42,13 +54,22 @@ def update_location_baidu(device):
     os.popen(cmd_prefix + "am start -d \"baidumap://map/direction?origin=" + str(location_points[0][0]) + "," + str(
         location_points[0][1]) + "'&'destination=" + str(location_points[-1][0]) + "," + str(
         location_points[-1][1]) + "'&'coord_type=wgs84'&'mode=driving'&'src=com.baidu.BaiduMap\"")
-    time.sleep(5)
+    time.sleep(30)
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 840 1520")
-    for point in location_points:
-        os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(point[0]))
-        os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(point[1]))
-        time.sleep(3)
+    for i in range(len(location_points)):
+        if i == (len(location_points)-1):
+            d = 1
+            delta_lat = 0
+            delta_lng = 0
+        else:
+            d = int(distance(location_points[i], location_points[i+1]))
+            delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
+            delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
+        for j in range(d):
+            os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(location_points[i][0] + j*delta_lat))
+            os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(location_points[i][1] + j*delta_lng))
+            time.sleep(2)
 
 
 def update_location_tencent(device):
@@ -61,13 +82,22 @@ def update_location_tencent(device):
     os.popen(cmd_prefix + "am start -d \"qqmap://map/routeplan?type=drive'&'fromcoord=" + str(
         from_lat) + "," + str(from_lng) + "'&'tocoord=" + str(to_lat) + "," + str(to_lng)
              + "'&'referer=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77\"")
-    time.sleep(5)
+    time.sleep(30)
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 840 1570")
-    for point in location_points:
-        os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(point[0]))
-        os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(point[1]))
-        time.sleep(3)
+    for i in range(len(location_points)):
+        if i == (len(location_points)-1):
+            d = 1
+            delta_lat = 0
+            delta_lng = 0
+        else:
+            d = int(distance(location_points[i], location_points[i+1]))
+            delta_lat = (location_points[i+1][0] - location_points[i][0]) / d
+            delta_lng = (location_points[i+1][1] - location_points[i][1]) / d
+        for j in range(d):
+            os.popen(cmd_prefix + "setprop persist.nox.gps.latitude " + str(location_points[i][0] + j*delta_lat))
+            os.popen(cmd_prefix + "setprop persist.nox.gps.longitude " + str(location_points[i][1] + j*delta_lng))
+            time.sleep(2)
 
 
 def update_location_google(device):
@@ -83,12 +113,13 @@ def update_location_google(device):
 
 def request_location_points():
     location_points.clear()
-    url = "http://hhmoumoumouhh.51vip.biz/web/LoginServlet"
-    res = requests.post(url, data={"AccountNumber": "Jackson", "Password": "123456"})
+    url = "http://hhmoumoumouhh.51vip.biz/web_war_exploded2/LoginServlet"
+    res = requests.post(url, data={"AccountNumber": "Tommy", "Password": "2345678"})
     ret_data = json.loads(res.text)
     if ret_data['params']['Result'] == "success":
-        for i in range(len(ret_data['points'])):
-            location_points.append((ret_data['points'][str(i)]['latitude'], ret_data['points'][str(i)]['longitude']))
+        for obj in ret_data['points']:
+            location_points.append([float(obj['latitude']), float(obj['longitude'])])
+        print(location_points)
     else:
         return -1
 
@@ -219,11 +250,27 @@ def out_of_china(lng, lat):
     return not (73.66 < lng < 135.05 and 3.86 < lat < 53.55)
 
 
+def distance(origin, destination):
+    lat1, lon1 = origin
+    lat2, lon2 = destination
+    radius = 6371 # km
+
+    dlat = math.radians(lat2-lat1)
+    dlon = math.radians(lon2-lon1)
+    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
+        * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = radius * c
+    '''单位为m'''
+    return d*1000
+
+
 if __name__ == '__main__':
-    # ret = request_location_points()
-    # if ret == -1:
-    # 	print("[Error] fail to request data.")
-    # 	exit(ret)
+    ret = request_location_points()
+    if ret == -1:
+    	print("[Error] fail to request data.")
+    	exit(ret)
+
     for point in location_points:
         point[1], point[0] = gcj02_to_wgs84(point[1], point[0])
     os.popen("Nox.exe")
@@ -235,6 +282,7 @@ if __name__ == '__main__':
 	
 	'''
     simulators = ret.readlines()[1:]
+    print(simulators)
 
     while True:
         option = input("Do you want to attack on 1) GaodeMap 2) BaiduMap 3)TencentMap 4)GoogleMap [1-4]? : ")
@@ -257,10 +305,14 @@ if __name__ == '__main__':
             print("[Error] Your input '" + str(option) + "' is an illegal number. Input 'n' to exit.")
             continue
         '''start simulation'''
+        threads = []
         for simulator in simulators:
             if simulator == '\n':
                 continue
             device = simulator.split('\t')[0]
             t = threading.Thread(target=target_function_name, args=(device,))
+            threads.append(t)
             t.start()
-            t.join()
+
+        for t in threads:
+            t.join()  
