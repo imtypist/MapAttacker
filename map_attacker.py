@@ -132,6 +132,8 @@ def update_location_google(device):
 
 
 def request_location_points():
+    global T_START_READABLE
+    global T_START_UNIX
     location_points.clear()
     url = "http://hhmoumoumouhh.51vip.biz/web_war_exploded2/LoginServlet"
     res = requests.post(url, data={"AccountNumber": "Tommy", "Password": "2345678"})
