@@ -22,6 +22,8 @@ location_points = [[31.2050610000, 121.3266350000], [31.2050470000, 121.32647400
 '''
 
 location_points = []
+T_START_UNIX = None
+T_START_READABLE = None
 
 
 def update_location_gaode(device):
@@ -30,7 +32,11 @@ def update_location_gaode(device):
     os.popen(cmd_prefix + "am start -d \"amapuri://route/plan/?slat=" + str(location_points[0][0]) + "'&'slon=" + str(
         location_points[0][1]) + "'&'dlat=" + str(location_points[-1][0]) + "'&'dlon=" + str(
         location_points[-1][1]) + "'&'dev=1'&'t=0\"")
-    time.sleep(30)
+
+    print("[Info] " + device + ": The task will start at " + T_START_READABLE)
+    while time.time() < T_START_UNIX:
+        time.sleep(1)
+
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 850 1560")
     for i in range(len(location_points)):
@@ -56,7 +62,11 @@ def update_location_baidu(device):
     os.popen(cmd_prefix + "am start -d \"baidumap://map/direction?origin=" + str(location_points[0][0]) + "," + str(
         location_points[0][1]) + "'&'destination=" + str(location_points[-1][0]) + "," + str(
         location_points[-1][1]) + "'&'coord_type=wgs84'&'mode=driving'&'src=com.baidu.BaiduMap\"")
-    time.sleep(30)
+    
+    print("[Info] " + device + ": The task will start at " + T_START_READABLE)
+    while time.time() < T_START_UNIX:
+        time.sleep(1)
+
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 840 1520")
     for i in range(len(location_points)):
@@ -86,7 +96,11 @@ def update_location_tencent(device):
     os.popen(cmd_prefix + "am start -d \"qqmap://map/routeplan?type=drive'&'fromcoord=" + str(
         from_lat) + "," + str(from_lng) + "'&'tocoord=" + str(to_lat) + "," + str(to_lng)
              + "'&'referer=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77\"")
-    time.sleep(30)
+    
+    print("[Info] " + device + ": The task will start at " + T_START_READABLE)
+    while time.time() < T_START_UNIX:
+        time.sleep(1)
+
     '''start navigation'''
     os.popen(cmd_prefix + "input tap 840 1570")
     for i in range(len(location_points)):
@@ -123,6 +137,8 @@ def request_location_points():
     res = requests.post(url, data={"AccountNumber": "Tommy", "Password": "2345678"})
     ret_data = json.loads(res.text)
     if ret_data['params']['Result'] == "success":
+        T_START_READABLE = ret_data['time']
+        T_START_UNIX =  time.mktime(time.strptime(T_START_READABLE, "%Y-%m-%d %H:%M:%S"))
         for obj in ret_data['points']:
             location_points.append([float(obj['latitude']), float(obj['longitude'])])
         print(location_points)
@@ -272,28 +288,11 @@ def distance(origin, destination):
 
 
 if __name__ == '__main__':
-    ret = request_location_points()
-    if ret == -1:
-    	print("[Error] fail to request data.")
-    	exit(ret)
-
-    for point in location_points:
-        point[1], point[0] = gcj02_to_wgs84(point[1], point[0])
-    os.popen("Nox.exe")
-    ret = os.popen("nox_adb.exe devices")
-    '''
-	e.g.,
-	List of devices attached
-	127.0.0.1:62001 device
-	
-	'''
-    simulators = ret.readlines()[1:]
-    print(simulators)
-
     while True:
         option = input("Do you want to attack on 1) GaodeMap 2) BaiduMap 3)TencentMap 4)GoogleMap [1-4]? : ")
         if option == 'n':
             exit(0)
+
         '''check the legality of option'''
         target_function_name = None
         option = int(option)
@@ -310,6 +309,28 @@ if __name__ == '__main__':
         else:
             print("[Error] Your input '" + str(option) + "' is an illegal number. Input 'n' to exit.")
             continue
+
+        print("[Info] request new gps data...")
+        ret = request_location_points()
+        if ret == -1:
+            print("[Error] fail to request data.")
+            exit(ret)
+
+        for point in location_points:
+            point[1], point[0] = gcj02_to_wgs84(point[1], point[0])
+
+        print("[Info] get active simulators list...")
+        os.popen("Nox.exe")
+        ret = os.popen("nox_adb.exe devices")
+        '''
+        e.g.,
+        List of devices attached
+        127.0.0.1:62001 device
+        
+        '''
+        simulators = ret.readlines()[1:]
+        print(simulators)
+
         '''start simulation'''
         threads = []
         for simulator in simulators:
